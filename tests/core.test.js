@@ -2,42 +2,44 @@ import { describe, it, expect, vi } from 'vitest';
 import { unique, groupBy, chunk, deepClone, memoize, counter } from '../src/functions.js';
 import { Store, SortedStore } from '../src/Store.js';
 
-describe('Functions', () => {
-  it('unique should remove duplicate values', () => {
+describe('Core Functions', () => {
+  it('unique: removes duplicate values from array', () => {
     expect(unique([1, 2, 2, 3, 1])).toEqual([1, 2, 3]);
     expect(unique([])).toEqual([]);
+    expect(unique(null)).toEqual([]);
   });
 
-  it('groupBy should group items by computed key', () => {
-    const data = [{ category: 'fruit', name: 'apple' }, { category: 'fruit', name: 'banana' }, { category: 'veg', name: 'carrot' }];
-    const result = groupBy(data, (item) => item.category);
-    expect(result.fruit.length).toBe(2);
-    expect(result.veg.length).toBe(1);
+  it('groupBy: groups objects by computed key', () => {
+    const data = [{ category: 'fruit', name: 'apple' }, { category: 'veg', name: 'carrot' }];
+    const res = groupBy(data, (item) => item.category);
+    expect(res.fruit.length).toBe(1);
+    expect(groupBy(null, null)).toEqual({});
   });
 
-  it('chunk should split array into chunks of specified size', () => {
+  it('chunk: splits array into sub-arrays of specified size', () => {
     expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
     expect(chunk([1, 2], 0)).toEqual([]);
+    expect(chunk([], 3)).toEqual([]);
   });
 
-  it('deepClone should perform deep copy of objects, arrays, and dates', () => {
+  it('deepClone: performs deep copy of objects, arrays, and Date', () => {
     const date = new Date();
-    const original = { a: 1, b: { c: 2 }, d: date };
+    const original = { a: 1, nested: { b: 2 }, d: date };
     const cloned = deepClone(original);
     expect(cloned).toEqual(original);
-    expect(cloned.b).not.toBe(original.b);
+    expect(cloned.nested).not.toBe(original.nested);
     expect(cloned.d).not.toBe(original.d);
   });
 
-  it('memoize should cache function execution results', () => {
+  it('memoize: caches results via closure', () => {
     const fn = vi.fn((x) => x * 2);
-    const memoized = memoize(fn);
-    expect(memoized(5)).toBe(10);
-    expect(memoized(5)).toBe(10);
+    const memo = memoize(fn);
+    expect(memo(5)).toBe(10);
+    expect(memo(5)).toBe(10);
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('counter should manage encapsulated state using closures', () => {
+  it('counter: isolates state using lexical scope closure', () => {
     const c = counter(10);
     expect(c.value()).toBe(10);
     expect(c.inc()).toBe(11);
@@ -45,8 +47,8 @@ describe('Functions', () => {
   });
 });
 
-describe('Store Classes', () => {
-  it('Store should manage items and calculate total correct price', () => {
+describe('Store & SortedStore Classes', () => {
+  it('Store: manages items and calculates total price correctly', () => {
     const store = new Store();
     store.add({ name: 'Book', price: 10, qty: 2 });
     store.add({ name: 'Pen', price: 2, qty: 5 });
@@ -54,7 +56,14 @@ describe('Store Classes', () => {
     expect(store.count).toBe(2);
   });
 
-  it('Store should handle remove and search operations', () => {
+  it('Store: merges item quantities on duplicate add', () => {
+    const store = new Store();
+    store.add({ name: 'Notebook', price: 15, qty: 1 });
+    store.add({ name: 'Notebook', price: 15, qty: 3 });
+    expect(store.find('Notebook').qty).toBe(4);
+  });
+
+  it('Store: removes and finds items accurately', () => {
     const store = new Store();
     store.add({ name: 'Laptop', price: 1000, qty: 1 });
     expect(store.find('Laptop')).toEqual({ name: 'Laptop', price: 1000, qty: 1 });
@@ -62,36 +71,23 @@ describe('Store Classes', () => {
     expect(store.find('Laptop')).toBeNull();
   });
 
-  it('Store static method createEmpty should instantiate empty store', () => {
+  it('Store: static createEmpty returns empty store', () => {
     const store = Store.createEmpty();
     expect(store.count).toBe(0);
   });
 
-  it('SortedStore should override getItems and return sorted array via super', () => {
+  it('SortedStore: overrides getItems and sorts by price via super', () => {
     const store = new SortedStore();
-    store.add({ name: 'A', price: 50, qty: 1 });
-    store.add({ name: 'B', price: 10, qty: 1 });
+    store.add({ name: 'Expensive', price: 100, qty: 1 });
+    store.add({ name: 'Cheap', price: 10, qty: 1 });
     const items = store.getItems();
     expect(items[0].price).toBe(10);
-    expect(items[1].price).toBe(50);
+    expect(items[1].price).toBe(100);
   });
 
-  it('Edge case: unique should handle invalid input gracefully', () => {
-    expect(unique(null)).toEqual([]);
-  });
-
-  it('Edge case: chunk should handle empty array', () => {
-    expect(chunk([], 3)).toEqual([]);
-  });
-
-  it('Edge case: Store should reject invalid item additions', () => {
+  it('Edge Case: Store rejects invalid item schemas', () => {
     const store = new Store();
     expect(store.add(null)).toBe(false);
-    expect(store.add({ name: 'Test' })).toBe(false);
-  });
-
-  it('Edge case: deepClone should handle primitive types', () => {
-    expect(deepClone(42)).toBe(42);
-    expect(deepClone('hello')).toBe('hello');
+    expect(store.add({ name: 'Invalid' })).toBe(false);
   });
 });

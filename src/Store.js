@@ -7,19 +7,34 @@ export class Store {
     }
   }
 
-  get count() {
-    return this.#items.length;
+  static isValidItem(item) {
+    return (
+      item !== null &&
+      typeof item === 'object' &&
+      typeof item.name === 'string' &&
+      typeof item.price === 'number' &&
+      typeof item.qty === 'number'
+    );
   }
 
   static createEmpty() {
     return new Store();
   }
 
+  get count() {
+    return this.#items.length;
+  }
+
   add(item) {
-    if (!item || typeof item !== 'object' || !item.name || typeof item.price !== 'number' || typeof item.qty !== 'number') {
+    if (!Store.isValidItem(item)) {
       return false;
     }
-    this.#items.push({ name: item.name, price: item.price, qty: item.qty });
+    const existing = this.#items.find((i) => i.name === item.name);
+    if (existing) {
+      existing.qty += item.qty;
+    } else {
+      this.#items.push({ name: item.name, price: item.price, qty: item.qty });
+    }
     return true;
   }
 
@@ -33,7 +48,8 @@ export class Store {
   }
 
   find(name) {
-    return this.#items.find((item) => item.name === name) || null;
+    const item = this.#items.find((i) => i.name === name);
+    return item ? { ...item } : null;
   }
 
   total() {
@@ -41,7 +57,7 @@ export class Store {
   }
 
   getItems() {
-    return [...this.#items];
+    return this.#items.map((item) => ({ ...item }));
   }
 }
 

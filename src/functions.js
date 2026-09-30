@@ -28,18 +28,15 @@ export function deepClone(obj) {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
-
   if (obj instanceof Date) {
     return new Date(obj.getTime());
   }
-
   if (Array.isArray(obj)) {
     return obj.map((item) => deepClone(item));
   }
-
   const copy = {};
-  for (const key of Object.keys(obj)) {
-    copy[key] = deepClone(obj[key]);
+  for (const [key, value] of Object.entries(obj)) {
+    copy[key] = deepClone(value);
   }
   return copy;
 }
@@ -52,7 +49,7 @@ export function memoize(fn) {
     if (cache.has(key)) {
       return cache.get(key);
     }
-    const result = fn(...args);
+    const result = fn.apply(this, args);
     cache.set(key, result);
     return result;
   };
