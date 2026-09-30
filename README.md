@@ -49,7 +49,7 @@ In my project, closures are utilized within `memoize` and `counter` functions to
 
 ## 4. Test Results
 
----
+![Passing Unit Tests](screenshot.png)
 
 ## 5. AI Tools Used
 
